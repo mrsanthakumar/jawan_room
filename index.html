@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Jawan Bhavan Booking System</title>
+
+<!-- SheetJS -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<!-- Font Awesome -->
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#08111f;
+    color:white;
+    padding:20px;
+}
+
+.header{
+    background:linear-gradient(to right,#07152a,#0f2348);
+    border:1px solid #d4a937;
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:20px;
+}
+
+.header-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:20px;
+}
+
+.logo-section{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.logo{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    background:#d4a937;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:28px;
+    color:#08111f;
+}
+
+.title h1{
+    font-size:34px;
+    color:#fff;
+}
+
+.title p{
+    color:#bbb;
+    margin-top:5px;
+}
+
+.stats{
+    display:flex;
+    gap:15px;
+}
+
+.stat-box{
+    background:#11213f;
+    padding:15px 25px;
+    border-radius:10px;
+    text-align:center;
+    border:1px solid #2d3f66;
+}
+
+.stat-box h2{
+    color:#d4a937;
+    margin-bottom:5px;
+}
+
+/* ROOM CARDS */
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.card{
+    background:#0e1d37;
+    border:1px solid #243a63;
+    border-radius:10px;
+    padding:18px;
+}
+
+.card h3{
+    font-size:15px;
+    color:#bbb;
+    margin-bottom:10px;
+}
+
+.card h1{
+    color:#27d07d;
+    font-size:32px;
+}
+
+.card p{
+    margin-top:8px;
+    color:#999;
+}
+
+/* BUTTONS */
+
+.top-controls{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.btn-group{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+button{
+    border:none;
+    padding:12px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    color:white;
+    font-weight:bold;
+}
+
+.add-btn{
+    background:#d4a937;
+    color:black;
+}
+
+.clear-btn{
+    background:#c0392b;
+}
+
+.export-btn{
+    background:#198754;
+}
+
+.print-btn{
+    background:#2c3e50;
+}
+
+/* SEARCH */
+
+.search-box input{
+    padding:12px 15px;
+    border:none;
+    border-radius:8px;
+    width:300px;
+    background:#10213d;
+    color:white;
+}
+
+/* FILTER */
+
+.filter-section{
+    margin-bottom:20px;
+}
+
+.filter-section select{
+    background:#10213d;
+    color:white;
+    border:1px solid #243a63;
+    padding:12px;
+    border-radius:8px;
+}
+
+/* BOOKING DETAILS */
+
+.result-box{
+    background:#0e1d37;
+    border:1px solid #243a63;
+    border-radius:10px;
+    padding:20px;
+    margin-bottom:20px;
+    display:none;
+}
+
+.result-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:15px;
+}
+
+.result-box input{
+    width:100%;
+    padding:12px;
+    background:#10213d;
+    border:1px solid #243a63;
+    color:white;
+    border-radius:8px;
+    margin-top:5px;
+}
+
+.result-box label{
+    color:#bbb;
+    font-size:14px;
+}
+
+.submit-btn{
+    background:#198754;
+    width:100%;
+}
+
+/* TABLE */
+
+.table-container{
+    overflow:auto;
+    border-radius:10px;
+    border:1px solid #243a63;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:1200px;
+}
+
+table th{
+    background:#0d1b33;
+    color:#d4a937;
+    padding:15px;
+    font-size:13px;
+    text-align:left;
+    border-bottom:1px solid #243a63;
+}
+
+table td{
+    padding:14px;
+    border-bottom:1px solid #1c2d4f;
+    font-size:14px;
+}
+
+table tr:nth-child(even){
+    background:#0d1a30;
+}
+
+table tr:hover{
+    background:#14284d;
+    cursor:pointer;
+}
+
+/* TAG */
+
+.tag{
+    padding:6px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.serving{
+    background:#1d6f42;
+}
+
+.retired{
+    background:#6c4f12;
+}
+
+/* FOOTER */
+
+.footer-stats{
+    margin-top:20px;
+    background:#0d1b33;
+    border:1px solid #243a63;
+    border-radius:10px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:15px;
+    padding:20px;
+}
+
+.footer-stats div{
+    text-align:center;
+}
+
+.footer-stats h3{
+    color:#d4a937;
+    margin-top:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<div class="header">
+
+    <div class="header-top">
+
+        <div class="logo-section">
+
+            <div class="logo">
+                <i class="fa-solid fa-star"></i>
+            </div>
+
+            <div class="title">
+                <p>GOVERNMENT DEPARTMENT ACCOMMODATION</p>
+                <h1>Jawan Bhavan</h1>
+                <p>
+                    Room Booking & Payment Register
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats">
+
+            <div class="stat-box">
+                <h2 id="totalBookings">0</h2>
+                <p>Bookings</p>
+            </div>
+
+            <div class="stat-box">
+                <h2 id="checkedIn">0</h2>
+                <p>Checked In</p>
+            </div>
+
+            <div class="stat-box">
+                <h2 id="totalRevenue">₹ 0</h2>
+                <p>Total Revenue</p>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- ROOM CARDS -->
+
+<div class="cards">
+
+    <div class="card">
+        <h3>SUITE ROOM</h3>
+        <h1>Rs. 900 / Day</h1>
+        <p>Serving Personnel</p>
+    </div>
+
+    <div class="card">
+        <h3>SUITE ROOM</h3>
+        <h1>Rs. 600 / Day</h1>
+        <p>Retired Personnel</p>
+    </div>
+
+    <div class="card">
+        <h3>FAMILY ROOM</h3>
+        <h1>Rs. 700 / Day</h1>
+        <p>Serving Personnel</p>
+    </div>
+
+    <div class="card">
+        <h3>FAMILY ROOM</h3>
+        <h1>Rs. 500 / Day</h1>
+        <p>Retired Personnel</p>
+    </div>
+
+</div>
+
+
+
+<!-- CONTROLS -->
+
+<div class="top-controls">
+
+    <div class="btn-group">
+
+        <input type="file"
+               id="excelFile"
+               accept=".xlsx,.xls">
+
+        <button class="clear-btn"
+                onclick="clearTable()">
+
+            Clear All
+
+        </button>
+
+        <button class="export-btn"
+                onclick="exportExcel()">
+
+            Export Excel
+
+        </button>
+
+        <button class="print-btn"
+                onclick="window.print()">
+
+            Print
+
+        </button>
+
+    </div>
+
+    <div class="search-box">
+
+        <input type="text"
+               id="searchInput"
+               placeholder="Search Application No / Service No / Mobile"
+               onkeyup="searchData()">
+
+    </div>
+
+</div>
+
+
+
+<!-- FILTER -->
+
+<div class="filter-section">
+
+    <select id="categoryFilter"
+            onchange="filterData()">
+
+        <option value="">All Category</option>
+        <option value="Serving">Serving</option>
+        <option value="Retired">Retired</option>
+
+    </select>
+
+</div>
+
+
+
+<!-- BOOKING DETAILS -->
+
+<div class="result-box" id="resultBox">
+
+    <h2 style="margin-bottom:20px;">
+        Booking Details
+    </h2>
+
+    <div class="result-grid">
+
+        <div>
+            <label>Check-In</label>
+            <input type="text"
+                   id="checkin"
+                   readonly>
+        </div>
+
+        <div>
+            <label>Check-Out</label>
+            <input type="text"
+                   id="checkout"
+                   readonly>
+        </div>
+
+        <div>
+            <label>Total Days</label>
+            <input type="text"
+                   id="days"
+                   readonly>
+        </div>
+
+        <div>
+            <label>Room No</label>
+            <input type="text"
+                   id="roomno"
+                   readonly>
+        </div>
+
+        <div>
+            <label>Amount (-500)</label>
+            <input type="text"
+                   id="amount"
+                   readonly>
+        </div>
+
+        <div>
+            <label>Upload Payment</label>
+            <input type="file"
+                   id="paymentFile">
+        </div>
+
+        <div>
+            <label>&nbsp;</label>
+
+            <button class="submit-btn"
+                    onclick="submitBooking()">
+
+                Submit
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- TABLE -->
+
+<div class="table-container">
+
+<table id="dataTable">
+
+<thead>
+
+<tr>
+
+<th>S.No</th>
+<th>Application No</th>
+<th>Service No</th>
+<th>Mobile No</th>
+<th>Category</th>
+<th>Room No</th>
+<th>Check-In</th>
+<th>Check-Out</th>
+<th>Total Days</th>
+<th>Amount</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+</tbody>
+
+</table>
+
+</div>
+
+
+
+<!-- FOOTER -->
+
+<div class="footer-stats">
+
+    <div>
+        <p>Total Bookings</p>
+        <h3 id="footerBooking">0</h3>
+    </div>
+
+    <div>
+        <p>Total Revenue</p>
+        <h3 id="footerRevenue">₹ 0</h3>
+    </div>
+
+</div>
+
+
+
+<script>
+
+let excelData = [];
+let filteredData = [];
+
+
+
+// UPLOAD EXCEL
+
+document.getElementById('excelFile')
+.addEventListener('change', function(e){
+
+    const file = e.target.files[0];
+
+    const reader = new FileReader();
+
+    reader.onload = function(event){
+
+        const data = new Uint8Array(event.target.result);
+
+        const workbook = XLSX.read(data, { type:'array' });
+
+        const sheetName = workbook.SheetNames[0];
+
+        const worksheet = workbook.Sheets[sheetName];
+
+        excelData =
+        XLSX.utils.sheet_to_json(worksheet);
+
+        filteredData = excelData;
+
+        displayTable(filteredData);
+
+        updateStats();
+
+        alert("Excel Loaded Successfully");
+
+    };
+
+    reader.readAsArrayBuffer(file);
+
+});
+
+
+
+// DISPLAY TABLE
+
+function displayTable(data){
+
+    const tbody =
+    document.querySelector("#dataTable tbody");
+
+    tbody.innerHTML = "";
+
+    data.forEach((row,index)=>{
+
+        tbody.innerHTML += `
+
+        <tr onclick="showBooking(${index})">
+
+            <td>${index+1}</td>
+
+            <td>
+                ${row["Application No"] || ""}
+            </td>
+
+            <td>
+                ${row["Service No"] || ""}
+            </td>
+
+            <td>
+                ${row["Mobile"] ||
+                  row["Mobile No"] || ""}
+            </td>
+
+            <td>
+
+                <span class="tag
+                ${(row["Category"] || "") === "Serving"
+                ? "serving" : "retired"}">
+
+                ${row["Category"] || ""}
+
+                </span>
+
+            </td>
+
+            <td>
+                ${row["Room No"] || ""}
+            </td>
+
+            <td>
+                ${row["Check-In"] ||
+                  row["Check In"] ||
+                  ""}
+            </td>
+
+            <td>
+                ${row["Check-Out"] ||
+                  row["Check Out"] ||
+                  ""}
+            </td>
+
+            <td>
+                ${row["Total Days"] || ""}
+            </td>
+
+            <td>
+                ₹ ${row["Room Rental Charge"] || ""}
+            </td>
+
+        </tr>
+
+        `;
+
+    });
+
+}
+
+
+
+// SEARCH
+
+function searchData(){
+
+    const value =
+    document.getElementById('searchInput')
+    .value.toLowerCase();
+
+    filteredData = excelData.filter(row =>
+
+        String(row["Application No"] || "")
+        .toLowerCase().includes(value)
+
+        ||
+
+        String(row["Service No"] || "")
+        .toLowerCase().includes(value)
+
+        ||
+
+        String(row["Mobile"] ||
+               row["Mobile No"] || "")
+        .toLowerCase().includes(value)
+
+        ||
+
+        String(row["Room No"] || "")
+        .toLowerCase().includes(value)
+
+    );
+
+    displayTable(filteredData);
+
+}
+
+
+
+// FILTER
+
+function filterData(){
+
+    const category =
+    document.getElementById('categoryFilter').value;
+
+    filteredData = excelData.filter(row => {
+
+        return (
+            category === "" ||
+            row["Category"] === category
+        );
+
+    });
+
+    displayTable(filteredData);
+
+}
+
+
+
+// SHOW BOOKING DETAILS
+
+function showBooking(index){
+
+    const result = filteredData[index];
+
+    document.getElementById('resultBox')
+    .style.display = "block";
+
+    document.getElementById('checkin').value =
+
+        result["Check-In"] ||
+        result["Check In"] ||
+        "";
+
+    document.getElementById('checkout').value =
+
+        result["Check-Out"] ||
+        result["Check Out"] ||
+        "";
+
+    document.getElementById('days').value =
+    result["Total Days"] || "";
+
+    document.getElementById('roomno').value =
+    result["Room No"] || "";
+
+    let amount =
+    parseFloat(
+    result["Room Rental Charge"] || 0);
+
+    document.getElementById('amount').value =
+    amount - 500;
+
+}
+
+
+
+// SUBMIT
+
+function submitBooking(){
+
+    const file =
+    document.getElementById('paymentFile').files[0];
+
+    if(!file){
+
+        alert("Please Upload Payment Screenshot");
+
+        return;
+    }
+
+    alert("Payment Submitted Successfully");
+
+}
+
+
+
+// CLEAR TABLE
+
+function clearTable(){
+
+    excelData = [];
+    filteredData = [];
+
+    document.querySelector("#dataTable tbody")
+    .innerHTML = "";
+
+    updateStats();
+
+}
+
+
+
+// EXPORT EXCEL
+
+function exportExcel(){
+
+    const ws =
+    XLSX.utils.json_to_sheet(filteredData);
+
+    const wb =
+    XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        "Bookings"
+    );
+
+    XLSX.writeFile(
+        wb,
+        "Bookings.xlsx"
+    );
+
+}
+
+
+
+// UPDATE STATS
+
+function updateStats(){
+
+    document.getElementById('totalBookings')
+    .innerText = excelData.length;
+
+    document.getElementById('checkedIn')
+    .innerText = excelData.length;
+
+    let revenue = 0;
+
+    excelData.forEach(row => {
+
+        revenue += parseFloat(
+        row["Room Rental Charge"] || 0);
+
+    });
+
+    document.getElementById('totalRevenue')
+    .innerText = "₹ " + revenue;
+
+    document.getElementById('footerBooking')
+    .innerText = excelData.length;
+
+    document.getElementById('footerRevenue')
+    .innerText = "₹ " + revenue;
+
+}
+
+</script>
+
+</body>
+</html>
