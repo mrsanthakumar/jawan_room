@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Room Availability System</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+
+/* ===== GLOBAL ===== */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    padding: 20px;
+}
+
+.container {
+    max-width: 1300px;
+    margin: auto;
+}
+
+h2 {
+    text-align: center;
+    color: #1e3a8a;
+}
+
+/* ===== CONTROLS ===== */
+.controls {
+    background: white;
+    padding: 15px;
+    margin-bottom: 25px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.controls input,
+.controls select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+/* Disabled style */
+input:disabled {
+    background: #e5e7eb;
+    opacity: 0.6;
+}
+
+/* ===== BUTTONS ===== */
+button {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+/* ===== GRID ===== */
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 15px;
+}
+
+.day-card {
+    background: white;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.day-card h4 {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+    color: #1e3a8a;
+}
+
+/* ===== STATUS ===== */
+.booked {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 6px;
+    border-radius: 6px;
+    margin-bottom: 5px;
+}
+
+.partial {
+    background: #fef3c7;
+    color: #b45309;
+    padding: 6px;
+    border-radius: 6px;
+    margin-bottom: 5px;
+}
+
+.available {
+    background: #dcfce7;
+    color: #166534;
+    padding: 6px;
+    border-radius: 6px;
+    margin-bottom: 5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Room Availability Dashboard</h2>
+
+<div class="controls">
+
+<input type="file" id="fileInput" onchange="processExcel()">
+
+<select id="filterType">
+<option value="equal">Equal (One Day)</option>
+<option value="between">Between Dates</option>
+<option value="greater">After Date</option>
+</select>
+
+<input type="date" id="startDate">
+<input type="date" id="endDate" disabled>
+
+<button class="btn-primary" onclick="applyFilter()">Apply</button>
+<button class="btn-secondary" onclick="resetView()">Reset</button>
+
+</div>
+
+<div id="calendar" class="calendar"></div>
+
+</div>
+
+<script>
+
+let bookings = [];
+let availabilityMap = {};
+let allRooms = [];
+
+/* ===== ENABLE/DISABLE END DATE ===== */
+document.getElementById("filterType").addEventListener("change", function () {
+    let endInput = document.getElementById("endDate");
+
+    if (this.value === "between") {
+        endInput.disabled = false;
+    } else {
+        endInput.disabled = true;
+        endInput.value = "";
+    }
+});
+
+/* ===== FORMAT DATE ===== */
+function formatDateStr(d){
+    let p = d.split("-");
+    return `${p[2]}-${p[1]}-${p[0]}`;
+}
+
+/* ===== GET HOUR ONLY ===== */
+function getHourOnly(t){
+    let [time, mod] = t.split(" ");
+    let h = parseInt(time.split(":")[0]);
+
+    if(mod === "PM" && h !== 12) h += 12;
+    if(mod === "AM" && h === 12) h = 0;
+
+    return h;
+}
+
+/* ===== BUILD AVAILABILITY ===== */
+function buildAvailability(data){
+
+    let map = {};
+
+    data.forEach(d => {
+
+        let ci = new Date(formatDateStr(d["Check-In Date"]));
+        let co = new Date(formatDateStr(d["Check-Out Date"]));
+
+        let inH = getHourOnly(d["Check-In Time"]);
+        let outH = getHourOnly(d["Check-Out Time"]);
+
+        if(inH < 9) ci.setDate(ci.getDate() - 1);
+
+        let cur = new Date(ci);
+
+        while(cur <= co){
+
+            let date = cur.toISOString().split("T")[0];
+
+            if(!map[date]) map[date] = [];
+
+            if(cur.toDateString() === co.toDateString()){
+
+                if(outH < 9){
+                    map[date].push({
+                        Room: d["Room No"],
+                        Name: d["Rank"] + " " + d["Name"], // ✅ Rank + Name
+                        type: "partial"
+                    });
+                }
+
+            } else {
+                map[date].push({
+                    Room: d["Room No"],
+                    Name: d["Rank"] + " " + d["Name"], // ✅ Rank + Name
+                    type: "full"
+                });
+            }
+
+            cur.setDate(cur.getDate() + 1);
+        }
+    });
+
+    return map;
+}
+
+/* ===== LOAD EXCEL ===== */
+function processExcel(){
+
+    let file = document.getElementById("fileInput").files[0];
+    if(!file) return;
+
+    let reader = new FileReader();
+
+    reader.onload = function(e){
+
+        let data = new Uint8Array(e.target.result);
+        let wb = XLSX.read(data, {type:'array'});
+
+        let sheet = wb.Sheets[wb.SheetNames[0]];
+        bookings = XLSX.utils.sheet_to_json(sheet);
+
+        allRooms = [...new Set(bookings.map(d => d["Room No"]))];
+
+        availabilityMap = buildAvailability(bookings);
+
+        renderCalendar(Object.keys(availabilityMap));
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+/* ===== RENDER ===== */
+function renderCalendar(dates){
+
+    let cal = document.getElementById("calendar");
+    cal.innerHTML = "";
+
+    dates.sort().forEach(date => {
+
+        let div = document.createElement("div");
+        div.className = "day-card";
+
+        let html = `<h4>${date}</h4>`;
+
+        allRooms.forEach(room => {
+
+            let rec = (availabilityMap[date] || []).find(r => r.Room === room);
+
+            if(rec){
+                if(rec.type === "full"){
+                    html += `<div class="booked">${room} - ${rec.Name}</div>`;
+                } else {
+                    html += `<div class="partial">${room} - Available after 9 AM</div>`;
+                }
+            } else {
+                html += `<div class="available">${room} - Available</div>`;
+            }
+        });
+
+        div.innerHTML = html;
+        cal.appendChild(div);
+    });
+}
+
+/* ===== FILTER ===== */
+function applyFilter(){
+
+    let type = document.getElementById("filterType").value;
+    let start = document.getElementById("startDate").value;
+    let end = document.getElementById("endDate").value;
+
+    if(!start){
+        alert("Select start date");
+        return;
+    }
+
+    let result = [];
+
+    if(type === "equal"){
+        result.push(start);
+    }
+
+    else if(type === "between"){
+
+        if(!end){
+            alert("Select end date");
+            return;
+        }
+
+        let s = new Date(start);
+        let e = new Date(end);
+
+        for(let d = new Date(s); d <= e; d.setDate(d.getDate()+1)){
+            result.push(d.toISOString().split("T")[0]);
+        }
+    }
+
+    else if(type === "greater"){
+
+        let s = new Date(start);
+
+        for(let i=0; i<30; i++){
+            let d = new Date(s);
+            d.setDate(d.getDate()+i);
+            result.push(d.toISOString().split("T")[0]);
+        }
+    }
+
+    renderCalendar(result);
+}
+
+/* ===== RESET ===== */
+function resetView(){
+    renderCalendar(Object.keys(availabilityMap));
+}
+
+</script>
+
+</body>
+</html>
